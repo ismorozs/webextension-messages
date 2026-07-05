@@ -1,0 +1,16 @@
+{
+  "name": "webextension-messages",
+  "version": "1.0.2",
+  "description": "Package simplifying the exchange of messages between the background and tabs of the browser",
+  "license": "MIT",
+  "author": "Igor Morozov <ismorozs@gmail.com>",
+  "main": "./dist/webextension-messages.js",
+  "scripts": {
+    "start": "webpack"
+  },
+  "devDependencies": {
+    "webextension-polyfill": "0.12.0",
+    "webpack": "5.108.4",
+    "webpack-cli": "7.2.1"
+  }
+}
