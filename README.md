@@ -18,17 +18,17 @@ With such a signature:
 ```js
 WebextensionMessages.setup (
   MessageHandlersMap {
-    MessageSenderFunctionName1: MessageHandler1 (...MessageParameters1) => ResultToSendBack1
-    MessageSenderFunctionName2: MessageHandler2 (...MessageParameters2) => ResultToSendBack2
-    MessageSenderFunctionName3: MessageHandler3 (...MessageParameters3) => ResultToSendBack3
+    MessageSenderFunctionName1: MessageHandler1 (MessageParameters1) => ResultToSendBack1
+    MessageSenderFunctionName2: MessageHandler2 (MessageParameters2) => ResultToSendBack2
+    MessageSenderFunctionName3: MessageHandler3 (MessageParameters3) => ResultToSendBack3
     ...
   },
   CommunicationId
 ) =>
   MessageSendersMap {
-    MessageSenderFunctionName1: (...MessageParameters1) => PromiseWithResult1
-    MessageSenderFunctionName2: (...MessageParameters2) => PromiseWithResult2
-    MessageSenderFunctionName3: (...MessageParameters3) => PromiseWithResult3
+    MessageSenderFunctionName1: (MessageParameters1) => PromiseWithResult1
+    MessageSenderFunctionName2: (MessageParameters2) => PromiseWithResult2
+    MessageSenderFunctionName3: (MessageParameters3) => PromiseWithResult3
     ...
     stopCommunication ()
   }
@@ -39,7 +39,7 @@ Where:
   
 ```MessageSenderFunctionName``` - name of the function that will send the message  
 ```MessageHandler``` - function that will handle the message on the receiving end  
-```MessageParameters``` - payload to the sender function and parameters for the handler function   
+```MessageParameters``` - payload to the sender function and parameters for the handler function. Can be a primitive, or Array, or Object, anything that can be serialized    
 ```ResultToSendBack``` - return value of the handler function that will be sent back to the sender  
 ```PromiseWithResult``` - return value of the sender function, a promise that will be resolved to ```ResultToSendBack``` from the receiver  
 
@@ -57,10 +57,13 @@ Basic usage:
 // shared.js =>
 // code that must be shared between the background and page scripts
 import WebextensionMessages from 'webextension-messages'
-const { sum } = WebextensionMessages.setup({
-  sum: (x, y) => x + y, 
+const { multiply } = WebextensionMessages.setup({
+  multiply: (x) => {
+   const result =  x * 2 // this operation will be done on the recipient side (background or tab, depending on who sent the message to whom)
+   return result; // result goes back to the sender, the one initiated multiply() call
+  }
 })
-export { sum };
+export { multiply };
 
 
 // background-script.js =>
@@ -69,21 +72,21 @@ import from "./shared.js"
 
 
 // content-script.js =>
-import { sum } from "./shared.js"; // import sender function
-const result = await sum(1, 2); // send a message to the background and wait for the response
+import { multiply } from "./shared.js"; // import sender function
+const result = await multiply(1); // a tab sends a message to the background and waits for the result, result Promise will be fulfilled with the background answer at some point
 console.log(result);
-// 3
+// 2
 ```
 
 Stop messaging and remove listeners:
 ```js
 // setting up communication
 cosnt { stopCommunication } = WebextensionMessages.setup({
-  sum: (x, y) => x + y, 
-}, "Math correspondence");
-// give the communication an identifier for both sides to know what set of functions is under discussion
+  doSomething: () => "Done something", 
+}, "Some messages");
+// give the communication an identifier "Some messages" for both sides to know what set of functions is under discussion
 
 // stopping it somewhere lower in the code
 stopCommunication();
-// no more listening for sum() message 
+// no more listening for doSomething() messages 
 ```
