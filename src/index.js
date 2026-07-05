@@ -1,4 +1,4 @@
-const browser = require("webextension-polyfill");
+const browser = require("webextension-polyfill/dist/browser-polyfill.min");
 
 const STOP_ACTION = `WEBEXTENSION_MESSAGES_STOP_COMMUNICATION`;
 const RESULT_PROMISES = {};
