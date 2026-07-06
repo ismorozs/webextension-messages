@@ -42,12 +42,16 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 const browser = __webpack_require__(/*! webextension-polyfill/dist/browser-polyfill.min */ "./node_modules/webextension-polyfill/dist/browser-polyfill.min.js");
 
 const STOP_ACTION = `WEBEXTENSION_MESSAGES_STOP_COMMUNICATION`;
+const RESUME_ACTION = `WEBEXTENSION_MESSAGES_RESUME_COMMUNICATION`;
 const RESULT_PROMISES = {};
 const ACTIONS = {};
 
 browser.runtime.onMessage.addListener((message) => {
   if (message.action === STOP_ACTION) {
-    stopCommunication(message.payload);
+    stopListening(message.payload);
+  }
+  if (message.action === RESUME_ACTION) {
+    resumeListening(message.payload);
   }
 });
 
@@ -55,7 +59,7 @@ function setupCommunication (actions, messagesId = generateId()) {
   const messages = Object.fromEntries(
     Object.entries(actions).map(([action]) => [
       action,
-      (payload) => sendMessageForResult(action, payload),
+      (payload) => sendMessageForResult(action, payload, messagesId),
     ]),
   );
 
@@ -65,7 +69,8 @@ function setupCommunication (actions, messagesId = generateId()) {
 
   return {
     ...messages,
-    stopCommunication: () => stopCommunication(messagesId, true),
+    stop: () => stopListening(messagesId, true),
+    resume: () => resumeListening(messagesId, true),
   };
 }
 
@@ -82,7 +87,10 @@ async function onMessage (message, actions = {}) {
   }
 }
 
-function sendMessageForResult (action, payload) {
+function sendMessageForResult(action, payload, messagesId) {
+  if (!isListening(messagesId)) {
+    return Promise.resolve();
+  }
   const { resultId, promise } = createResultPromise();
   sendMessage(action, payload, resultId);
   return promise;
@@ -114,6 +122,10 @@ function isBackgroundScript () {
   );
 }
 
+function isListening (messagesId) {
+  return browser.runtime.onMessage.hasListener(ACTIONS[messagesId]);
+}
+
 function generateId () {
   return `${Date.now()}-${Math.random()}`;
 }
@@ -122,12 +134,21 @@ function getCurrentTab () {
   return browser.tabs.query({ active: true, currentWindow: true });
 }
 
-function stopCommunication (messagesId, sendToReceiver) {
+function stopListening(messagesId, sendToReceiver) {
   browser.runtime.onMessage.removeListener(ACTIONS[messagesId]);
-  delete ACTIONS[messagesId];
 
   if (sendToReceiver) {
     sendMessage(STOP_ACTION, messagesId);
+  }
+}
+
+function resumeListening(messagesId, sendToReceiver) {
+  if (!isListening(messagesId)) {
+    browser.runtime.onMessage.addListener(ACTIONS[messagesId]);
+  }
+
+  if (sendToReceiver) {
+    sendMessage(RESUME_ACTION, messagesId);
   }
 }
 

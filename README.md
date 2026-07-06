@@ -30,7 +30,8 @@ WebextensionMessages.setup (
     MessageSenderFunctionName2: (MessageParameters2) => PromiseWithResult2
     MessageSenderFunctionName3: (MessageParameters3) => PromiseWithResult3
     ...
-    stopCommunication ()
+    stop ()
+    resume ()
   }
 ```
 Where:  
@@ -44,7 +45,10 @@ Where:
 ```PromiseWithResult``` - return value of the sender function, a promise that will be resolved to ```ResultToSendBack``` from the receiver  
 
 ```CommunicationId``` (optional) - string identifying the declared communication, used only for removing listeners  
-```stopCommunication ()``` - special predefined method for stopping messaging and removing listeners, works only if ```CommunicationId``` is given  
+```stop ()``` - special predefined method for stopping the work of message listeners  
+```resume ()``` - special predefined method for resuming the work of message listeners  
+  
+```stop ()``` and  ```resume ()``` methods are only going to work correctly if ```CommunicationId``` is given  
 
   
 
@@ -78,15 +82,25 @@ console.log(result);
 // 2
 ```
 
-Stop messaging and remove listeners:
+Stop listening for messages, and then resume:
 ```js
 // setting up communication
-cosnt { stopCommunication } = WebextensionMessages.setup({
+const { doSomething, stop, resume } = WebextensionMessages.setup({
   doSomething: () => "Done something", 
 }, "Some messages");
 // give the communication an identifier "Some messages" for both sides to know what set of functions is under discussion
 
 // stopping it somewhere lower in the code
-stopCommunication();
 // no more listening for doSomething() messages 
+stop();
+const noResult = await doSomething();
+console.log(noResult);
+// undefined
+
+
+// resuming it somewhere even lower in the code
+resume();
+const result = await doSomething();
+console.log(result);
+// "Done something"
 ```
