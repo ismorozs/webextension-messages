@@ -77,7 +77,7 @@ import from "./shared.js"
 
 // content-script.js =>
 import { multiply } from "./shared.js"; // import sender function
-const result = await multiply(1); // a tab sends a message to the background and waits for the result, result Promise will be fulfilled with the background answer at some point
+const result = await multiply(1); // the tab sends a message to the background and waits for the result, result Promise will be fulfilled with the background answer at some point
 console.log(result);
 // 2
 ```
